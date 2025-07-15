@@ -11,3 +11,8 @@ wheels/
 
 # Pycharm IDE files
 .idea/
+
+# Audio files
+*.wav
+*.mp3
+*.m4a
