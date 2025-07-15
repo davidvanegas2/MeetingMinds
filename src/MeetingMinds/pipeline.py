@@ -4,6 +4,8 @@ from typing import Optional
 
 from .transcriber import Transcriber, Transcript, TranscriptionError
 from .diarizer import PyannoteDiarizationBackend, DiarizationResult, DiarizedTranscriptBuilder, DiarizedTranscript
+from .language_detector import LanguageDetector
+from .cleaner import Cleaner
 # from .summarizer import Summarizer, Summary  # Uncomment when summarizer is implemented
 
 class MeetingPipeline:
@@ -33,16 +35,26 @@ class MeetingPipeline:
         # 3. Merge transcript and diarization
         diarized_transcript: DiarizedTranscript = DiarizedTranscriptBuilder.merge(transcript, diarization_result)
         self.logger.info("Diarized transcript built.")
-        # 4. Summarization (optional, placeholder)
+        # 4. Detect language
+        language_detector = LanguageDetector()
+        detected_language = language_detector.detect_language(diarized_transcript.full_text)
+        self.logger.info(f"Detected language: {detected_language}")
+        # 5. Clean transcript
+        cleaner = Cleaner(language=detected_language if detected_language in ["en", "es"] else "en")
+        cleaned_diarized_transcript = cleaner.clean_diarized_transcript(diarized_transcript)
+        self.logger.info("Cleaned diarized transcript.")
+        # 6. Summarization (optional, placeholder)
         # summary: Optional[Summary] = None
         # if self.summarizer:
-        #     summary = self.summarizer.summarize(diarized_transcript)
+        #     summary = self.summarizer.summarize(cleaned_diarized_transcript)
         #     self.logger.info("Summarization completed.")
         # Return all results
         return {
             "transcript": transcript,
             "diarization": diarization_result,
             "diarized_transcript": diarized_transcript,
+            "detected_language": detected_language,
+            "cleaned_diarized_transcript": cleaned_diarized_transcript,
             # "summary": summary,
         }
 
@@ -58,11 +70,10 @@ if __name__ == "__main__":
     audio_file = Path(sys.argv[1])
     pipeline = MeetingPipeline()
     results = pipeline.run(audio_file)
-    print("\nFull Transcript:\n", results["transcript"].full_text)
-    print("\nDiarized Segments:")
-    for seg in results["diarized_transcript"].segments:
+    print("\nCleaned Diarized Segments:")
+    for seg in results["cleaned_diarized_transcript"].segments:
         print(f"[{seg.start:.2f}-{seg.end:.2f}] Speaker: {seg.speaker} | {seg.text}")
+    print("\nDetected language:", results["detected_language"])
     # Uncomment below when summarizer is available
     # if results.get("summary"):
     #     print("\nSummary:\n", results["summary"].text)
-
