@@ -10,3 +10,8 @@ dependencies = [
     "pyannote-audio>=3.3.2",
     "pydub>=0.25.1",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.3",
+]
