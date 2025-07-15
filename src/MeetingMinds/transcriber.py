@@ -38,8 +38,7 @@ class Transcript:
 # Backend interface
 @runtime_checkable
 class TranscriptionBackend(Protocol):
-    def transcribe(self, audio_path: Path) -> Transcript:
-        ...
+    def transcribe(self, audio_path: Path) -> Transcript: ...
 
 
 # Whisper backend implementation
@@ -53,6 +52,7 @@ class WhisperBackend:
         if self._model is None:
             try:
                 import whisper
+
                 self._logger.info(f"Loading Whisper model '{self.model_name}'...")
                 self._model = whisper.load_model(self.model_name)
                 self._logger.info("Whisper model loaded.")
@@ -63,6 +63,7 @@ class WhisperBackend:
     def _convert_audio(self, audio_path: Path) -> Path:
         try:
             from pydub import AudioSegment
+
             self._logger.debug(f"Checking audio format for {audio_path}")
             if audio_path.suffix.lower() != ".wav":
                 self._logger.info(f"Converting {audio_path} to WAV format...")
@@ -84,9 +85,7 @@ class WhisperBackend:
             result = self._model.transcribe(str(wav_path))
             segments = [
                 TranscriptSegment(
-                    start=seg["start"],
-                    end=seg["end"],
-                    text=seg["text"].strip()
+                    start=seg["start"], end=seg["end"], text=seg["text"].strip()
                 )
                 for seg in result.get("segments", [])
             ]

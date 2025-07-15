@@ -1,9 +1,11 @@
 from typing import Optional
 
+
 class LanguageDetector:
     def __init__(self):
         try:
             from langdetect import detect
+
             self._detect = detect
         except ImportError:
             raise ImportError("Please install langdetect: pip install langdetect")
