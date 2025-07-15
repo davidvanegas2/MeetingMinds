@@ -36,15 +36,19 @@ class DiarizationBackend(Protocol):
 # Pyannote implementation
 class PyannoteDiarizationBackend:
     def __init__(self, pipeline_name: str = "pyannote/speaker-diarization-3.1", access_token: Optional[str] = None):
+        self._logger = logging.getLogger(__name__)
+        self._logger.info(f"Initializing Pyannote Diarization Backend: {pipeline_name}")
         from pyannote.audio import Pipeline
         self.pipeline = Pipeline.from_pretrained(pipeline_name, use_auth_token=access_token)
+        self._logger.info("Pyannote Diarization Backend initialized.")
 
     def diarize(self, audio_path: Path) -> DiarizationResult:
+        self._logger.info(f"Diarizing audio file: {audio_path}")
         diarization = self.pipeline(str(audio_path))
         segments = []
         for turn, _, speaker in diarization.itertracks(yield_label=True):
             segments.append(SpeakerSegment(start=turn.start, end=turn.end, speaker=speaker))
-        # Optionally align transcript segments to speakers here
+        self._logger.info(f"Diarization completed with {len(segments)} segments.")
         return DiarizationResult(segments=segments)
 
 class DiarizedTranscriptBuilder:
