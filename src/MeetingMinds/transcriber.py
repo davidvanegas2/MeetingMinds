@@ -116,28 +116,3 @@ class Transcriber:
         path = Path(audio_path)
         self._logger.info(f"Starting transcription for {path}")
         return self.backend.transcribe(path)
-
-
-# Example usage
-if __name__ == "__main__":
-    import sys
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-    )
-
-    if len(sys.argv) < 2:
-        print("Usage: python transcriber.py <audio_file>")
-        sys.exit(1)
-
-    audio_file = sys.argv[1]
-    transcriber = Transcriber(backend_name="whisper", model_name="base")
-    try:
-        transcript = transcriber.transcribe(audio_file)
-        print("Full Transcript:\n", transcript.full_text)
-        print("\nSegments:")
-        for seg in transcript.segments:
-            print(f"[{seg.start:.2f}-{seg.end:.2f}] {seg.text}")
-    except TranscriptionError as e:
-        logging.error(f"Transcription failed: {e}")

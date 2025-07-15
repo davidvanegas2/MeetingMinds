@@ -71,25 +71,3 @@ class DiarizedTranscriptBuilder:
                 )
         full_text = transcript.full_text
         return DiarizedTranscript(segments=diarized_segments, full_text=full_text)
-
-if __name__ == "__main__":
-    import sys
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-    )
-
-    if len(sys.argv) < 2:
-        print("Usage: python diarizer.py <audio_file>")
-        sys.exit(1)
-
-    # Initialize diarization backend (replace with your HuggingFace token if needed)
-    diarizer = PyannoteDiarizationBackend(access_token="")
-
-    # Run diarization
-    result = diarizer.diarize(Path(sys.argv[1]))
-
-    # Print results
-    for segment in result.segments:
-        print(f"Speaker: {segment.speaker}, Start: {segment.start:.2f}s, End: {segment.end:.2f}s")
