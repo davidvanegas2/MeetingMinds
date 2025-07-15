@@ -15,6 +15,18 @@ class SpeakerSegment:
 class DiarizationResult:
     segments: List[SpeakerSegment] = field(default_factory=list)
 
+@dataclass(frozen=True)
+class DiarizedSegment:
+    start: float
+    end: float
+    speaker: str
+    text: str
+
+@dataclass(frozen=True)
+class DiarizedTranscript:
+    segments: List[DiarizedSegment] = field(default_factory=list)
+    full_text: str = ""
+
 # Backend interface
 @runtime_checkable
 class DiarizationBackend(Protocol):
@@ -34,6 +46,31 @@ class PyannoteDiarizationBackend:
             segments.append(SpeakerSegment(start=turn.start, end=turn.end, speaker=speaker))
         # Optionally align transcript segments to speakers here
         return DiarizationResult(segments=segments)
+
+class DiarizedTranscriptBuilder:
+    @staticmethod
+    def merge(transcript, diarization_result) -> DiarizedTranscript:
+        # Align transcript segments to diarization segments by time overlap
+        diarized_segments = []
+        for speaker_segment in diarization_result.segments:
+            # Collect transcript segments that overlap with this speaker segment
+            texts = []
+            for tseg in transcript.segments:
+                # Check for time overlap
+                if tseg.end > speaker_segment.start and tseg.start < speaker_segment.end:
+                    # Optionally, trim text to the overlap
+                    texts.append(tseg.text)
+            if texts:
+                diarized_segments.append(
+                    DiarizedSegment(
+                        start=speaker_segment.start,
+                        end=speaker_segment.end,
+                        speaker=speaker_segment.speaker,
+                        text=" ".join(texts)
+                    )
+                )
+        full_text = transcript.full_text
+        return DiarizedTranscript(segments=diarized_segments, full_text=full_text)
 
 if __name__ == "__main__":
     import sys
