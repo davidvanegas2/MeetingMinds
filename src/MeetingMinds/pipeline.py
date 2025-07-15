@@ -3,10 +3,16 @@ from pathlib import Path
 from typing import Optional
 
 from .transcriber import Transcriber, Transcript, TranscriptionError
-from .diarizer import PyannoteDiarizationBackend, DiarizationResult, DiarizedTranscriptBuilder, DiarizedTranscript
+from .diarizer import (
+    PyannoteDiarizationBackend,
+    DiarizationResult,
+    DiarizedTranscriptBuilder,
+    DiarizedTranscript,
+)
 from .language_detector import LanguageDetector
 from .cleaner import Cleaner
 # from .summarizer import Summarizer, Summary  # Uncomment when summarizer is implemented
+
 
 class MeetingPipeline:
     def __init__(
@@ -16,8 +22,12 @@ class MeetingPipeline:
         # summarizer: Optional[Summarizer] = None,  # Uncomment when available
     ):
         self.logger = logging.getLogger(__name__)
-        self.transcriber = transcriber or Transcriber(backend_name="whisper", model_name="base")
-        self.diarizer = diarizer or PyannoteDiarizationBackend(access_token="")
+        self.transcriber = transcriber or Transcriber(
+            backend_name="whisper", model_name="base"
+        )
+        self.diarizer = diarizer or PyannoteDiarizationBackend(
+            access_token=""
+        )
         # self.summarizer = summarizer  # Uncomment when available
 
     def run(self, audio_path: Path):
@@ -33,15 +43,23 @@ class MeetingPipeline:
         diarization_result: DiarizationResult = self.diarizer.diarize(audio_path)
         self.logger.info("Diarization completed.")
         # 3. Merge transcript and diarization
-        diarized_transcript: DiarizedTranscript = DiarizedTranscriptBuilder.merge(transcript, diarization_result)
+        diarized_transcript: DiarizedTranscript = DiarizedTranscriptBuilder.merge(
+            transcript, diarization_result
+        )
         self.logger.info("Diarized transcript built.")
         # 4. Detect language
         language_detector = LanguageDetector()
-        detected_language = language_detector.detect_language(diarized_transcript.full_text)
+        detected_language = language_detector.detect_language(
+            diarized_transcript.full_text
+        )
         self.logger.info(f"Detected language: {detected_language}")
         # 5. Clean transcript
-        cleaner = Cleaner(language=detected_language if detected_language in ["en", "es"] else "en")
-        cleaned_diarized_transcript = cleaner.clean_diarized_transcript(diarized_transcript)
+        cleaner = Cleaner(
+            language=detected_language if detected_language in ["en", "es"] else "en"
+        )
+        cleaned_diarized_transcript = cleaner.clean_diarized_transcript(
+            diarized_transcript
+        )
         self.logger.info("Cleaned diarized transcript.")
         # 6. Summarization (optional, placeholder)
         # summary: Optional[Summary] = None
@@ -58,11 +76,12 @@ class MeetingPipeline:
             # "summary": summary,
         }
 
+
 if __name__ == "__main__":
     import sys
+
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
     if len(sys.argv) < 2:
         print("Usage: python pipeline.py <audio_file>")
