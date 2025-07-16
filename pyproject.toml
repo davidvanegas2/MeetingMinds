@@ -5,6 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "boto3>=1.39.7",
+    "langchain>=0.3.26",
+    "langchain-aws>=0.2.28",
+    "langchain-community>=0.3.27",
     "langdetect>=1.0.9",
     "openai-whisper>=20250625",
     "pyannote-audio>=3.3.2",
