@@ -11,7 +11,7 @@ from .diarizer import (
 )
 from .language_detector import LanguageDetector
 from .cleaner import Cleaner
-# from .summarizer import Summarizer, Summary  # Uncomment when summarizer is implemented
+from .summarizer import Summarizer
 
 
 class MeetingPipeline:
@@ -19,16 +19,21 @@ class MeetingPipeline:
         self,
         transcriber: Optional[Transcriber] = None,
         diarizer: Optional[PyannoteDiarizationBackend] = None,
-        # summarizer: Optional[Summarizer] = None,  # Uncomment when available
+        summarizer: Optional[Summarizer] = None,
+        summarizer_model_id: str = "anthropic.claude-v2",
     ):
         self.logger = logging.getLogger(__name__)
         self.transcriber = transcriber or Transcriber(
             backend_name="whisper", model_name="base"
         )
-        self.diarizer = diarizer or PyannoteDiarizationBackend(
-            access_token=""
-        )
-        # self.summarizer = summarizer  # Uncomment when available
+        self.diarizer = diarizer or PyannoteDiarizationBackend(access_token="")
+        if summarizer:
+            self.summarizer = summarizer
+        else:
+            # If credentials are not provided, let Bedrock/LangChain use default AWS config
+            self.summarizer = Summarizer(
+                model_id=summarizer_model_id,
+            )
 
     def run(self, audio_path: Path):
         self.logger.info(f"Starting pipeline for {audio_path}")
@@ -61,11 +66,18 @@ class MeetingPipeline:
             diarized_transcript
         )
         self.logger.info("Cleaned diarized transcript.")
-        # 6. Summarization (optional, placeholder)
-        # summary: Optional[Summary] = None
-        # if self.summarizer:
-        #     summary = self.summarizer.summarize(cleaned_diarized_transcript)
-        #     self.logger.info("Summarization completed.")
+        # 6. Summarization
+        summary = None
+        if self.summarizer:
+            # Concatenate cleaned diarized segments for summary
+            summary_input = "\n".join(
+                f"[{seg.start:.2f}-{seg.end:.2f}] Speaker: {seg.speaker} | {seg.text}"
+                for seg in cleaned_diarized_transcript.segments
+            )
+            summary = self.summarizer.summarize(
+                summary_input, language=detected_language
+            )
+            self.logger.info("Summarization completed.")
         # Return all results
         return {
             "transcript": transcript,
@@ -73,7 +85,7 @@ class MeetingPipeline:
             "diarized_transcript": diarized_transcript,
             "detected_language": detected_language,
             "cleaned_diarized_transcript": cleaned_diarized_transcript,
-            # "summary": summary,
+            "summary": summary,
         }
 
 
@@ -84,15 +96,18 @@ if __name__ == "__main__":
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
     if len(sys.argv) < 2:
-        print("Usage: python pipeline.py <audio_file>")
+        print("Usage: python pipeline.py <audio_file> [aws_region] [model_id]")
         sys.exit(1)
     audio_file = Path(sys.argv[1])
-    pipeline = MeetingPipeline()
+    aws_region = sys.argv[2] if len(sys.argv) > 2 else "us-east-1"
+    model_id = sys.argv[3] if len(sys.argv) > 3 else "anthropic.claude-v2"
+    pipeline = MeetingPipeline(
+        summarizer_model_id=model_id,
+    )
     results = pipeline.run(audio_file)
     print("\nCleaned Diarized Segments:")
     for seg in results["cleaned_diarized_transcript"].segments:
         print(f"[{seg.start:.2f}-{seg.end:.2f}] Speaker: {seg.speaker} | {seg.text}")
     print("\nDetected language:", results["detected_language"])
-    # Uncomment below when summarizer is available
-    # if results.get("summary"):
-    #     print("\nSummary:\n", results["summary"].text)
+    if results.get("summary"):
+        print("\nSummary:\n", results["summary"])
